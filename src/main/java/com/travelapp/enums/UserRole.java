@@ -1,0 +1,6 @@
+package com.travelapp.enums;
+
+public enum UserRole {
+    USER,
+    ADMIN
+}
