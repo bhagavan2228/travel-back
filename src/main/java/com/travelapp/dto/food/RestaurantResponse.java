@@ -13,10 +13,16 @@ public class RestaurantResponse {
     private Long id;
     private Long destinationId;
     private String name;
+    private String googlePlaceId;
     private String cuisine;
     private Double rating;
-    private Integer deliveryMinutes;
-    private Integer costForTwo;
+    private Integer userRatingsTotal;
+    private String address;
+    private Double latitude;
+    private Double longitude;
+    private String priceLevel;
+    private String website;
+    private String googleMapsUri;
+    private String businessStatus;
     private String imageUrl;
-    private long menuItemCount;
 }

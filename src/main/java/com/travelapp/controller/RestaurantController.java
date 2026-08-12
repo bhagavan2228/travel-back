@@ -2,7 +2,7 @@ package com.travelapp.controller;
 
 import com.travelapp.dto.ApiResponse;
 import com.travelapp.dto.PageResponse;
-import com.travelapp.dto.food.MenuItemResponse;
+
 import com.travelapp.dto.food.RestaurantResponse;
 import com.travelapp.service.RestaurantService;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +21,11 @@ public class RestaurantController {
         return ApiResponse.ok(restaurantService.getRestaurants(destinationId, page));
     }
 
-    @GetMapping("/restaurants/{restaurantId}/menu")
-    public ApiResponse<PageResponse<MenuItemResponse>> getMenu(
-            @PathVariable Long restaurantId,
+    @GetMapping("/restaurants/search")
+    public ApiResponse<PageResponse<RestaurantResponse>> searchRestaurants(
+            @RequestParam Double latitude,
+            @RequestParam Double longitude,
             @RequestParam(defaultValue = "0") int page) {
-        return ApiResponse.ok(restaurantService.getMenuItems(restaurantId, page));
+        return ApiResponse.ok(restaurantService.searchRestaurantsByCoordinates(latitude, longitude, page));
     }
 }

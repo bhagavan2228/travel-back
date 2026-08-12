@@ -18,21 +18,39 @@ public class Restaurant {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "destination_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destination_id")
     private Destination destination;
 
     @Column(nullable = false)
     private String name;
 
-    private String cuisine;
+    @Column(unique = true)
+    private String googlePlaceId;
+
+    private String cuisine; // from places.primaryTypeDisplayName
 
     private Double rating;
 
-    private Integer deliveryMinutes;
+    private Integer userRatingsTotal;
 
-    private Integer costForTwo;
+    @Column(length = 500)
+    private String address;
 
+    private Double latitude;
+
+    private Double longitude;
+
+    private String priceLevel;
+
+    private String website;
+
+    @Column(length = 500)
+    private String googleMapsUri;
+
+    private String businessStatus;
+
+    @Column(length = 2000)
     private String imageUrl;
 
     @Column(nullable = false)

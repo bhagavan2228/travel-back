@@ -19,5 +19,8 @@ public class FoodResponse {
     private Double rating;
     private String priceRange;
     private String address;
+    private String zomatoUrl;
+    private String swiggyUrl;
+    private String imageUrl;
     private FoodSource source;
 }

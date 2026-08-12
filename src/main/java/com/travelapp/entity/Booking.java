@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", indexes = { @Index(name = "idx_booking_trip", columnList = "trip_id") })
 @Getter
 @Setter
 @NoArgsConstructor

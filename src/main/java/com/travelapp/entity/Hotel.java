@@ -5,7 +5,7 @@ import lombok.*;
 import java.util.List;
 
 @Entity
-@Table(name = "hotels")
+@Table(name = "hotels", indexes = { @Index(name = "idx_hotel_destination", columnList = "destination_id") })
 @Data
 @Builder
 @NoArgsConstructor

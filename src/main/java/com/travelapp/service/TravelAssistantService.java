@@ -143,7 +143,7 @@ public class TravelAssistantService {
     }
 
     private void sendMockStream(String message, String context, SseEmitter emitter, StringBuilder fullResponse) throws Exception {
-        String mockReply = generateMockReply(message, context);
+        String mockReply = generateMockReply(context);
         String[] words = mockReply.split(" ");
         for (String word : words) {
             fullResponse.append(word).append(" ");
@@ -152,8 +152,8 @@ public class TravelAssistantService {
         }
     }
 
-    private String generateMockReply(String message, String context) {
-        String lower = message.toLowerCase();
+    private String generateMockReply(String context) {
+
         String ctxLower = context.toLowerCase();
 
         if (ctxLower.contains("warangal")) {

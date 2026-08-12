@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "food_recommendations")
+@Table(name = "food_recommendations", indexes = { @Index(name = "idx_foodrecommendation_destination", columnList = "destination_id") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,6 +34,15 @@ public class FoodRecommendation {
     private String priceRange;
 
     private String address;
+
+    @Column(length = 500)
+    private String zomatoUrl;
+
+    @Column(length = 500)
+    private String swiggyUrl;
+
+    @Column(length = 500)
+    private String imageUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

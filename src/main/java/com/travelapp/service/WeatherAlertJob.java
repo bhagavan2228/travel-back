@@ -43,12 +43,30 @@ public class WeatherAlertJob {
                 boolean alertNeeded = false;
                 String alertMessage = "";
                 
+                // Check current weather
                 if (weather.getTemperature() > 40) {
                     alertNeeded = true;
                     alertMessage = "Extreme heat alert for your trip to " + trip.getDestination().getName() + "! Temp: " + weather.getTemperature() + "°C";
                 } else if (weather.getCondition().toLowerCase().contains("rain") || weather.getCondition().toLowerCase().contains("storm")) {
                     alertNeeded = true;
-                    alertMessage = "Rain/Storm expected for your trip to " + trip.getDestination().getName() + ". Don't forget your umbrella!";
+                    alertMessage = "Rain/Storm expected currently at " + trip.getDestination().getName() + ". Don't forget your umbrella!";
+                }
+
+                // Check forecast if trip is upcoming
+                if (!alertNeeded && weather.getForecast() != null) {
+                    for (var forecastDay : weather.getForecast()) {
+                        if (trip.getStartDate() != null && !forecastDay.getDate().isBefore(trip.getStartDate())) {
+                            if (forecastDay.getMaxTemp() > 40) {
+                                alertNeeded = true;
+                                alertMessage = "Extreme heat forecast on " + forecastDay.getDate() + " at " + trip.getDestination().getName() + "! Max Temp: " + forecastDay.getMaxTemp() + "°C";
+                                break;
+                            } else if (forecastDay.getCondition().toLowerCase().contains("rain") || forecastDay.getCondition().toLowerCase().contains("storm")) {
+                                alertNeeded = true;
+                                alertMessage = "Rain/Storm forecast on " + forecastDay.getDate() + " at " + trip.getDestination().getName() + ". Plan accordingly!";
+                                break;
+                            }
+                        }
+                    }
                 }
                 
                 if (alertNeeded) {

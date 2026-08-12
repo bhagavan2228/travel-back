@@ -3,3 +3,5 @@
 spring:
   datasource:
     password: YOUR_MYSQL_ROOT_PASSWORD
+yelp:
+  api-key: YOUR_YELP_API_KEY

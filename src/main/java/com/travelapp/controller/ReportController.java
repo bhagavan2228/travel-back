@@ -18,6 +18,7 @@ public class ReportController {
     private final ReportService reportService;
 
     @GetMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<ReportResponse>> getAll() {
         return ApiResponse.ok(reportService.findAll());
     }

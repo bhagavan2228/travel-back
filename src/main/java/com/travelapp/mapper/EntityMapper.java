@@ -71,6 +71,9 @@ public final class EntityMapper {
                 .rating(f.getRating())
                 .priceRange(f.getPriceRange())
                 .address(f.getAddress())
+                .zomatoUrl(f.getZomatoUrl())
+                .swiggyUrl(f.getSwiggyUrl())
+                .imageUrl(f.getImageUrl())
                 .source(f.getSource())
                 .build();
     }
@@ -142,6 +145,16 @@ public final class EntityMapper {
                 .reportsResolved(c.getReportsResolved())
                 .totalReviews(c.getTotalReviews())
                 .rank(rank)
+                .build();
+    }
+    public static com.travelapp.dto.event.EventResponse toEventResponse(PredictedEvent e) {
+        return com.travelapp.dto.event.EventResponse.builder()
+                .id(e.getId())
+                .destinationId(e.getDestination().getId())
+                .title(e.getTitle())
+                .eventDate(e.getEventDate())
+                .category(e.getCategory())
+                .description(e.getDescription())
                 .build();
     }
 }

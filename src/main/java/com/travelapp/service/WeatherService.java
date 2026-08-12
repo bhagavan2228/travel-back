@@ -55,25 +55,90 @@ public class WeatherService {
     }
 
     private WeatherResponse fetchFromOpenWeather(String location, double lat, double lng, String apiKey) {
-        String url = String.format("%s/weather?lat=%s&lon=%s&appid=%s&units=metric",
+        String weatherUrl = String.format("%s/weather?lat=%s&lon=%s&appid=%s&units=metric",
+                appProperties.getWeather().getBaseUrl(), lat, lng, apiKey);
+        
+        String forecastUrl = String.format("%s/forecast?lat=%s&lon=%s&appid=%s&units=metric",
                 appProperties.getWeather().getBaseUrl(), lat, lng, apiKey);
 
-        var response = webClientBuilder.build()
+        var weatherResponse = webClientBuilder.build()
                 .get()
-                .uri(url)
+                .uri(weatherUrl)
                 .retrieve()
                 .bodyToMono(java.util.Map.class)
                 .block();
 
-        if (response == null) {
+        var forecastResponse = webClientBuilder.build()
+                .get()
+                .uri(forecastUrl)
+                .retrieve()
+                .bodyToMono(java.util.Map.class)
+                .block();
+
+        if (weatherResponse == null) {
             return buildMockWeather(location);
         }
 
         @SuppressWarnings("unchecked")
-        var main = (java.util.Map<String, Object>) response.get("main");
+        var main = (java.util.Map<String, Object>) weatherResponse.get("main");
         @SuppressWarnings("unchecked")
-        var weatherList = (List<java.util.Map<String, Object>>) response.get("weather");
+        var weatherList = (List<java.util.Map<String, Object>>) weatherResponse.get("weather");
         var weather = weatherList != null && !weatherList.isEmpty() ? weatherList.get(0) : java.util.Map.of();
+
+        List<ForecastDay> forecastDays = buildMockForecast();
+        if (forecastResponse != null && forecastResponse.containsKey("list")) {
+            @SuppressWarnings("unchecked")
+            List<java.util.Map<String, Object>> list = (List<java.util.Map<String, Object>>) forecastResponse.get("list");
+            
+            java.util.Map<LocalDate, List<java.util.Map<String, Object>>> groupedByDay = new java.util.LinkedHashMap<>();
+            for (var item : list) {
+                String dtTxt = (String) item.get("dt_txt"); // e.g. "2022-08-30 15:00:00"
+                LocalDate date = LocalDate.parse(dtTxt.substring(0, 10));
+                groupedByDay.computeIfAbsent(date, k -> new ArrayList<>()).add(item);
+            }
+            
+            forecastDays = new ArrayList<>();
+            int count = 0;
+            for (var entry : groupedByDay.entrySet()) {
+                if (count >= 5) break;
+                LocalDate date = entry.getKey();
+                List<java.util.Map<String, Object>> dailyItems = entry.getValue();
+                
+                double minTemp = Double.MAX_VALUE;
+                double maxTemp = Double.MIN_VALUE;
+                String cond = "Clear";
+                String desc = "Clear sky";
+                
+                // take the condition from the middle of the day if possible, or the first one
+                if (!dailyItems.isEmpty()) {
+                    var midDayItem = dailyItems.get(dailyItems.size() / 2);
+                    @SuppressWarnings("unchecked")
+                    var weatherArr = (List<java.util.Map<String, Object>>) midDayItem.get("weather");
+                    if (weatherArr != null && !weatherArr.isEmpty()) {
+                        cond = (String) weatherArr.get(0).get("main");
+                        desc = (String) weatherArr.get(0).get("description");
+                    }
+                }
+                
+                for (var item : dailyItems) {
+                    @SuppressWarnings("unchecked")
+                    var m = (java.util.Map<String, Object>) item.get("main");
+                    double tMin = ((Number) m.get("temp_min")).doubleValue();
+                    double tMax = ((Number) m.get("temp_max")).doubleValue();
+                    if (tMin < minTemp) minTemp = tMin;
+                    if (tMax > maxTemp) maxTemp = tMax;
+                }
+                
+                forecastDays.add(ForecastDay.builder()
+                        .date(date)
+                        .minTemp(minTemp)
+                        .maxTemp(maxTemp)
+                        .condition(cond)
+                        .description(desc)
+                        .build());
+                count++;
+            }
+        }
 
         return WeatherResponse.builder()
                 .location(location)
@@ -84,7 +149,7 @@ public class WeatherService {
                 .description((String) weather.get("description"))
                 .icon((String) weather.get("icon"))
                 .windSpeed(5.0)
-                .forecast(buildMockForecast())
+                .forecast(forecastDays)
                 .mockData(false)
                 .build();
     }

@@ -35,7 +35,7 @@ public class BookingController {
     }
 
     @GetMapping("/trip/{tripId}")
-    public ApiResponse<List<BookingResponse>> getByTrip(@PathVariable Long tripId) {
+    public ApiResponse<List<BookingResponse>> getByTrip(@PathVariable("tripId") Long tripId) {
         User user = securityUtils.getCurrentUser();
         return ApiResponse.ok(bookingService.findByTripId(tripId, user));
     }

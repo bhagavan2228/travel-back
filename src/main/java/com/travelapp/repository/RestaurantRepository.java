@@ -9,4 +9,5 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     Page<Restaurant> findByDestinationIdOrderByRankOrderAsc(Long destinationId, Pageable pageable);
     long countByDestinationId(Long destinationId);
     boolean existsByDestinationId(Long destinationId);
+    java.util.Optional<Restaurant> findByGooglePlaceId(String googlePlaceId);
 }

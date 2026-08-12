@@ -27,7 +27,7 @@ public class DestinationController {
 
     private final DestinationService destinationService;
     private final FoodService foodService;
-    private final EventPredictionService eventPredictionService;
+    private final EventPredictionService EventPredictionService;
     private final ReviewService reviewService;
     private final SecurityUtils securityUtils;
 
@@ -53,7 +53,7 @@ public class DestinationController {
 
     @GetMapping("/{id}/events")
     public ApiResponse<List<EventResponse>> getEvents(@PathVariable Long id) {
-        return ApiResponse.ok(eventPredictionService.predictEvents(id));
+        return ApiResponse.ok(EventPredictionService.getPredictedEventsForDestination(id));
     }
 
     @GetMapping("/{id}/reviews")

@@ -26,7 +26,7 @@ public class Destination {
 
     private String state;
 
-    @Column(length = 2000)
+    @Column(length = 5000)
     private String description;
 
     private String imageUrl;
