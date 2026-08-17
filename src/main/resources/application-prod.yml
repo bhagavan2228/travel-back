@@ -1,0 +1,23 @@
+# Production profile for Render / Cloud deployments
+# Activate with: SPRING_PROFILES_ACTIVE=prod
+spring:
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:mysql://mysql-321de275-muthinenibhagavan-e928.b.aivencloud.com:15872/defaultdb?ssl-mode=REQUIRED}
+    username: ${DATASOURCE_USERNAME:avnadmin}
+    password: ${DATASOURCE_PASSWORD:}
+    driver-class-name: ${DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    open-in-view: false
+
+server:
+  port: ${PORT:8082}
+
+logging:
+  level:
+    root: WARN
+    com.travelapp: INFO
+    org.springframework.security: ERROR

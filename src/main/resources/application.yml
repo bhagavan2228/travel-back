@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: ${SERVER_PORT:${PORT:8082}}
   servlet:
     context-path: /api
 
@@ -7,19 +7,22 @@ spring:
   application:
     name: travel-backend
 
+  profiles:
+    default: local
+
   config:
     import: optional:classpath:application-local.yml
 
   datasource:
-    url: jdbc:mysql://localhost:3306/travelback?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: ${MYSQL_PASSWORD:}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DATASOURCE_URL:jdbc:mysql://localhost:3306/travelback?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DATASOURCE_USERNAME:root}
+    password: ${DATASOURCE_PASSWORD:${MYSQL_PASSWORD:}}
+    driver-class-name: ${DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: false
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:false}
     open-in-view: false
     properties:
       hibernate:
@@ -28,13 +31,15 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET:travel-app-jwt-secret-key-change-in-production-min-256-bits-long!!}
-    access-token-expiration-ms: 3600000
-    refresh-token-expiration-ms: 604800000
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:3600000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
 
   cors:
     allowed-origins:
       - http://localhost:5173
       - http://localhost:5174
+      - http://localhost:3000
+      - https://*.vercel.app
 
   weather:
     api-key: ${WEATHER_API_KEY:}
@@ -46,6 +51,7 @@ app:
 
   toxicity:
     threshold: 0.7
+    api-key: ${TOXICITY_API_KEY:}
 
   grok:
     api-key: ${GROK_API_KEY:}
@@ -68,7 +74,7 @@ app:
     base-url: https://api.aviationstack.com/v1
 
   railkit:
-    proxy-url: ${RAILKIT_PROXY_URL:}
+    proxy-url: ${RAILKIT_PROXY_URL:http://localhost:3001}
 
   duffel:
     api-key: ${DUFFEL_API_KEY:default-key}
