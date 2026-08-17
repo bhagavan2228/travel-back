@@ -28,9 +28,9 @@ public class GeminiFoodProvider implements ThirdPartyFoodProvider {
         String city = destination.getCity() != null ? destination.getCity() : destination.getName();
         log.info("Fetching real restaurant recommendations for {} using Gemini AI...", city);
 
-        String prompt = "You are a local food expert in " + city + ". Provide a JSON array of 15 must-visit local restaurants or street food spots. " +
-                "Only return valid JSON array. Each object should have: " +
-                "\"name\" (string), \"cuisine\" (string), \"description\" (string, very brief), \"rating\" (number, e.g. 4.5), \"priceRange\" (string, $, $$, or $$$). " +
+        String prompt = "You are a local food expert in " + city + ". Provide a JSON array of 20 must-visit, real local restaurants, iconic dining spots, and street food favorites in " + city + ". " +
+                "Only return valid raw JSON array. Each object should have: " +
+                "\"name\" (string), \"cuisine\" (string), \"description\" (string, very brief), \"address\" (string, actual street address in " + city + "), \"rating\" (number, e.g. 4.6), \"priceRange\" (string, $, $$, or $$$). " +
                 "Do not include markdown blocks like ```json.";
 
         try {
@@ -44,7 +44,8 @@ public class GeminiFoodProvider implements ThirdPartyFoodProvider {
 
             if (root.isArray()) {
                 for (JsonNode node : root) {
-                    String cuisine = node.path("cuisine").asText("Local");
+                    String cuisine = node.path("cuisine").asText("Local Specialties");
+                    String address = node.path("address").asText(city);
                     String imageUrl = wikipediaImageClient.fetchImageForQuery(cuisine + " food");
                     if (imageUrl == null || imageUrl.contains("Taj_Mahal")) {
                         imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/800px-Good_Food_Display_-_NCI_Visuals_Online.jpg";
@@ -52,12 +53,12 @@ public class GeminiFoodProvider implements ThirdPartyFoodProvider {
 
                     recommendations.add(FoodRecommendation.builder()
                             .destination(destination)
-                            .name(node.path("name").asText("Unknown Place"))
+                            .name(node.path("name").asText("Local Culinary Gem"))
                             .cuisine(cuisine)
-                            .description(node.path("description").asText("A great place to eat."))
-                            .rating(node.path("rating").asDouble(4.0))
+                            .description(node.path("description").asText("Must-visit spot for delicious authentic food."))
+                            .rating(node.path("rating").asDouble(4.5))
                             .priceRange(node.path("priceRange").asText("$$"))
-                            .address(city) // Gemini might not give exact street address easily, use city
+                            .address(address)
                             .imageUrl(imageUrl)
                             .source(FoodSource.AI_RECOMMENDED)
                             .build());

@@ -32,7 +32,7 @@ public class GeminiApiClient {
     public String callGemini(String prompt) {
         try {
             String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
-                    .path("/gemini-3.6-flash:generateContent")
+                    .path("/gemini-1.5-flash:generateContent")
                     .queryParam("key", apiKey)
                     .build()
                     .toUriString();

@@ -26,10 +26,14 @@ public class FoodService {
         Destination dest = destinationService.getDestination(destinationId);
         List<FoodRecommendation> foods = foodRepository.findByDestinationId(destinationId);
         
-        if (foods.isEmpty()) {
+        if (foods.size() < 15) {
+            if (!foods.isEmpty()) {
+                foodRepository.deleteAll(foods);
+                foodRepository.flush();
+            }
             // Cache-aside: Fetch from external API and save to DB
             List<FoodRecommendation> apiData = foodProvider.fetchTopRestaurants(dest);
-            if (apiData.isEmpty()) {
+            if (apiData.size() < 15) {
                 apiData = mockProvider.fetchTopRestaurants(dest);
             }
             foods = foodRepository.saveAll(apiData);

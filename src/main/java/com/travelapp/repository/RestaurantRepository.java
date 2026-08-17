@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     Page<Restaurant> findByDestinationIdOrderByRankOrderAsc(Long destinationId, Pageable pageable);
+    java.util.List<Restaurant> findByDestinationId(Long destinationId);
     long countByDestinationId(Long destinationId);
     boolean existsByDestinationId(Long destinationId);
     java.util.Optional<Restaurant> findByGooglePlaceId(String googlePlaceId);
