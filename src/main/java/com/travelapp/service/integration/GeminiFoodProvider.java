@@ -28,7 +28,7 @@ public class GeminiFoodProvider implements ThirdPartyFoodProvider {
         String city = destination.getCity() != null ? destination.getCity() : destination.getName();
         log.info("Fetching real restaurant recommendations for {} using Gemini AI...", city);
 
-        String prompt = "You are a local food expert in " + city + ". Provide a JSON array of the top 5 must-visit local restaurants or street food spots. " +
+        String prompt = "You are a local food expert in " + city + ". Provide a JSON array of 15 must-visit local restaurants or street food spots. " +
                 "Only return valid JSON array. Each object should have: " +
                 "\"name\" (string), \"cuisine\" (string), \"description\" (string, very brief), \"rating\" (number, e.g. 4.5), \"priceRange\" (string, $, $$, or $$$). " +
                 "Do not include markdown blocks like ```json.";

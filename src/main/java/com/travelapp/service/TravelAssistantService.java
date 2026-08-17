@@ -38,6 +38,7 @@ public class TravelAssistantService {
 
     @Transactional
     public SseEmitter chatStream(ChatRequest request, User user) {
+        log.info("Received chat request from user: {}, message: {}", user.getEmail(), request.getMessage());
         String sessionId = request.getSessionId() != null ? request.getSessionId() : UUID.randomUUID().toString();
 
         chatHistoryRepository.save(ChatHistory.builder()
@@ -96,7 +97,7 @@ public class TravelAssistantService {
     }
 
     private void streamFromGemini(String message, String context, String apiKey, SseEmitter emitter, StringBuilder fullResponse) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key=" + apiKey;
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?key=" + apiKey;
 
         String systemPrompt = "You are a helpful travel assistant. Context: " + context + "\n\nUser: " + message;
         
@@ -106,17 +107,15 @@ public class TravelAssistantService {
                 )
         );
 
-        Flux<String> responseStream = webClientBuilder.build()
+        Flux<JsonNode> responseStream = webClientBuilder.build()
                 .post()
                 .uri(url)
                 .bodyValue(body)
                 .retrieve()
-                .bodyToFlux(String.class);
+                .bodyToFlux(JsonNode.class);
 
-        responseStream.subscribe(chunk -> {
+        responseStream.subscribe(rootNode -> {
             try {
-                // Parse Gemini chunk to get text
-                JsonNode rootNode = objectMapper.readTree(chunk);
                 if (rootNode.has("candidates")) {
                     JsonNode candidates = rootNode.get("candidates");
                     if (candidates.isArray() && candidates.size() > 0) {
@@ -126,7 +125,8 @@ public class TravelAssistantService {
                             if (parts.isArray() && parts.size() > 0) {
                                 String text = parts.get(0).get("text").asText();
                                 fullResponse.append(text);
-                                emitter.send(SseEmitter.event().name("message").data(text));
+                                String json = objectMapper.writeValueAsString(Map.of("reply", text));
+                                emitter.send(SseEmitter.event().name("message").data(json));
                             }
                         }
                     }
@@ -136,6 +136,8 @@ public class TravelAssistantService {
             }
         }, error -> {
             log.error("Gemini stream error", error);
+        }, () -> {
+            log.info("Gemini stream completed successfully");
         });
         
         // Block to keep executor thread alive until stream completes
@@ -147,7 +149,8 @@ public class TravelAssistantService {
         String[] words = mockReply.split(" ");
         for (String word : words) {
             fullResponse.append(word).append(" ");
-            emitter.send(SseEmitter.event().name("message").data(word + " "));
+            String json = objectMapper.writeValueAsString(Map.of("reply", word + " "));
+            emitter.send(SseEmitter.event().name("message").data(json));
             Thread.sleep(100); // Simulate network delay
         }
     }

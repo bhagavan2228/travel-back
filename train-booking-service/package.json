@@ -1,0 +1,15 @@
+{
+  "name": "train-booking-service",
+  "version": "1.0.0",
+  "description": "RailKit Proxy Service",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "railkit": "^4.1.0",
+    "cors": "^2.8.5"
+  }
+}

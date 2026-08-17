@@ -34,8 +34,13 @@ public class EventPredictionService {
         List<PredictedEvent> existingEvents = eventRepository.findByDestinationIdAndEventDateAfterOrderByEventDateAsc(destinationId, LocalDate.now().minusDays(1));
         
         if (!existingEvents.isEmpty()) {
-            log.info("Returning cached predicted events for destination {}", destinationId);
-            return existingEvents.stream().map(EntityMapper::toEventResponse).toList();
+            if (existingEvents.stream().anyMatch(e -> e.getBestTime() == null)) {
+                log.info("Old cached events found without bestTime. Clearing cache.");
+                eventRepository.deleteAll(existingEvents);
+            } else {
+                log.info("Returning cached predicted events for destination {}", destinationId);
+                return existingEvents.stream().map(EntityMapper::toEventResponse).toList();
+            }
         }
 
         log.info("No cached events found. Fetching from News & Gemini API for destination {}", destinationId);
@@ -49,12 +54,7 @@ public class EventPredictionService {
 
         // 4. Save to Database (Cache-aside)
         List<PredictedEvent> eventsToSave = predictedEventsData.stream().map(data -> {
-            LocalDate eventDate;
-            try {
-                eventDate = LocalDate.parse(data.get("date"));
-            } catch (Exception e) {
-                eventDate = LocalDate.now().plusDays((long) (Math.random() * 10) + 1); // Random future date fallback
-            }
+            LocalDate eventDate = LocalDate.now().plusDays((long) (Math.random() * 10) + 1);
 
             return PredictedEvent.builder()
                     .destination(dest)
@@ -62,6 +62,7 @@ public class EventPredictionService {
                     .eventDate(eventDate)
                     .category(data.get("category"))
                     .description(data.get("description"))
+                    .bestTime(data.get("bestTime"))
                     .build();
         }).toList();
 

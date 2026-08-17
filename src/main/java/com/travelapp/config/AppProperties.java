@@ -17,6 +17,7 @@ public class AppProperties {
     private Assistant assistant = new Assistant();
     private Toxicity toxicity = new Toxicity();
     private Grok grok = new Grok();
+    private Google google = new Google();
 
     @Data
     public static class Jwt {
@@ -53,6 +54,11 @@ public class AppProperties {
         private String apiKey;
         private String baseUrl = "https://api.x.ai/v1";
         private String model = "grok-4.3";
+    }
+
+    @Data
+    public static class Google {
+        private String placesApiKey;
     }
 }
 

@@ -67,10 +67,18 @@ app:
     api-key: ${AVIATIONSTACK_API_KEY:}
     base-url: https://api.aviationstack.com/v1
 
-  amadeus:
-    api-key: ${AMADEUS_API_KEY:}
-    api-secret: ${AMADEUS_API_SECRET:}
-    base-url: https://test.api.amadeus.com/v1
+  railkit:
+    proxy-url: ${RAILKIT_PROXY_URL:}
+
+  duffel:
+    api-key: ${DUFFEL_API_KEY:default-key}
+    cars-api-key: ${DUFFEL_CARS_API_KEY:default-key}
+    base-url: https://api.duffel.com
+
+  hotelbeds:
+    api-key: ${HOTELBEDS_API_KEY:default-key}
+    api-secret: ${HOTELBEDS_API_SECRET:default-secret}
+    base-url: https://api.test.hotelbeds.com/hotel-api/1.0
 
   perspective:
     api-key: ${PERSPECTIVE_API_KEY:}

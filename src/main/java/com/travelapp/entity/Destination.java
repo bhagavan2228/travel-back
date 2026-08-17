@@ -29,6 +29,7 @@ public class Destination {
     @Column(length = 5000)
     private String description;
 
+    @Column(length = 1024)
     private String imageUrl;
 
     private Double latitude;

@@ -13,11 +13,13 @@ import com.travelapp.config.AppProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.travelapp.service.integration.WikipediaImageClient;
+import com.travelapp.service.integration.GooglePlacesImageClient;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
@@ -35,8 +37,10 @@ public class DestinationService {
     private final HotelRepository hotelRepository;
     private final AppProperties appProperties;
     private final WikipediaImageClient wikipediaImageClient;
+    private final GooglePlacesImageClient googlePlacesImageClient;
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
+    private final com.travelapp.service.integration.GeminiApiClient geminiApiClient;
 
     @Transactional(readOnly = true)
     public List<DestinationResponse> findAll() {
@@ -155,102 +159,39 @@ public class DestinationService {
             country = capitalize(parts[1].trim());
         }
 
-        String apiKey = appProperties.getGrok().getApiKey();
-        if (apiKey != null && !apiKey.isBlank()) {
-            return destinationRepository.save(generateDestinationWithGrok(city, country));
+        // 1. Geocode to get real lat/lng
+        double[] coords = geocodeCity(city, country);
+
+        // 2. Try Gemini for a rich, real description
+        String description = generateDescriptionWithGemini(city, country);
+
+        // 3. Get image from Wikipedia (with User-Agent fix) or Unsplash fallback
+        // 3. Get image from Google Places API with Unsplash/Wikipedia fallback
+        String imageUrl = googlePlacesImageClient.fetchImageForQuery(city);
+        if (imageUrl == null) {
+            imageUrl = wikipediaImageClient.fetchImageForQuery(city);
         }
 
-        String description = "Explore the wonderful city of " + city + ", " + country + ". " +
-                "Famous for its vibrant local culture, stunning architectural landmarks, scenic natural beauty, and authentic regional cuisine. " +
-                "Popular must-visit attractions include historical monuments, ancient temples, serene gardens, bustling local markets, and famous local food spots. " +
-                "The city offers a rich tapestry of history, heritage, and modern development. " +
-                "Visitors can enjoy traditional festivals, local craftsmanship, and explore nearby natural attractions. " +
-                "The local food scene features unique regional specialties that have been perfected over generations. " +
-                "Transportation is well-connected with major cities through rail, road, and air. " +
-                "The best time to visit is during the cooler months for a comfortable sightseeing experience. " +
-                "A perfect getaway for history enthusiasts, food lovers, and culture seekers alike.";
-        String lower = city.toLowerCase();
-        String imageUrl;
-        
-        if (lower.contains("warangal")) {
-            description = "Warangal, the historic Kakatiya capital, is a treasure trove of medieval Indian art and architecture in Telangana. " +
-                    "The Thousand Pillar Temple, built in 1163 AD by King Rudra Deva, is a masterpiece of Kakatiya architecture featuring intricately carved pillars dedicated to Shiva, Vishnu, and Surya. " +
-                    "Warangal Fort, a UNESCO World Heritage tentative site, showcases magnificent stone gateways (Kirti Thoranas) with exquisite carvings that rival any in India. " +
-                    "Ramappa Temple (Ramalingeswara Temple), a UNESCO World Heritage Site, is an engineering marvel with floating bricks and stunning Kakatiyan sculptural art. " +
-                    "Bhadrakali Lake, surrounding the ancient Bhadrakali Temple, offers serene boating and picnic spots. " +
-                    "Pakhal Lake, a 13th-century man-made lake surrounded by dense forest, is a wildlife sanctuary and birding paradise. " +
-                    "Warangal's cuisine features authentic Telangana flavors — Sakinalu (crispy rice snack), Jonna Rotte (sorghum flatbread), Golichina Mamsam (spicy mutton curry), and Sarva Pindi. " +
-                    "The Kakatiya Musical Garden offers a colorful fountain show set to music. " +
-                    "The Warangal Fort's iconic four Kirti Thoranas (ornamental arches) are featured on the Telangana state emblem. " +
-                    "Eturnagaram Wildlife Sanctuary, one of the oldest in Telangana, is home to tigers, leopards, and diverse birdlife. " +
-                    "The city was once known as Orugallu (single stone), referring to the massive boulder on which the fort was built. " +
-                    "Thousand Pillar Temple's Nandi statue is carved from a single block of black basalt and is considered a sculptural marvel. " +
-                    "The Sammakka Saralamma Jatara festival near Warangal is the largest tribal fair in Asia, attracting millions. " +
-                    "Warangal has a semi-arid climate with hot summers; the best time to visit is October to February. " +
-                    "The city is well-connected by rail and road, approximately 150 km from Hyderabad, and is developing rapidly as an educational and IT hub.";
-            imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Thousand_Pillar_Temple_2.jpg/800px-Thousand_Pillar_Temple_2.jpg";
-        } else if (lower.contains("araku")) {
-            description = "Araku Valley, nestled in the Eastern Ghats of Andhra Pradesh, is a breathtaking hill station famous for its coffee plantations, tribal culture, and stunning natural beauty. " +
-                    "The valley sits at an elevation of 900 meters and is known for its pleasant climate, lush greenery, and rolling hills. " +
-                    "Borra Caves, one of the largest caves in India, feature stunning million-year-old stalactite and stalagmite formations. " +
-                    "The Araku Coffee is considered among the finest in the world, organically grown by tribal farmers and internationally awarded. " +
-                    "Chaparai Waterfalls, a spectacular cascading waterfall surrounded by dense forests, is a must-visit during monsoons. " +
-                    "The Tribal Museum showcases the rich culture, art, and lifestyle of the local Dhimsa and other tribal communities. " +
-                    "Padmapuram Gardens, with its hanging trees, topiary art, and flower gardens, is a delightful retreat. " +
-                    "The train journey from Visakhapatnam to Araku through 58 tunnels and over scenic bridges is one of the most beautiful rail journeys in India. " +
-                    "Local cuisine includes bamboo chicken (chicken cooked inside bamboo over fire), bamboo biryani, and authentic tribal preparations. " +
-                    "Ananthagiri Hills, on the way to Araku, offer panoramic viewpoints and coffee estate walks. " +
-                    "The valley's Dhimsa dance, performed by tribal communities, is a UNESCO-recognized cultural tradition. " +
-                    "Araku hosts an annual coffee festival celebrating its world-class Arabica coffee. " +
-                    "Katiki Waterfalls, hidden in a cave formation, provides a unique trekking and adventure experience. " +
-                    "The best time to visit Araku is October to March when the weather is cool and pleasant. " +
-                    "The valley is approximately 115 km from Visakhapatnam and is accessible by road and the scenic Kirandul-Visakhapatnam railway line.";
-            imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Araku_Valley.jpg/800px-Araku_Valley.jpg";
-        } else if (lower.contains("goa")) {
-            description = "Goa, India's smallest state by area, is the country's premier beach destination and a melting pot of Indian and Portuguese cultures. " +
-                    "Baga Beach and Calangute Beach are the most popular tourist beaches, known for their vibrant nightlife, beach shacks, and water sports. " +
-                    "Palolem Beach in South Goa is a crescent-shaped paradise ideal for kayaking, dolphin watching, and silent noise parties. " +
-                    "The Basilica of Bom Jesus, a UNESCO World Heritage Site, houses the mortal remains of St. Francis Xavier. " +
-                    "Goa's cuisine is a unique Indo-Portuguese fusion — Fish Curry Rice, Bebinca, Vindaloo, Xacuti, and Prawn Balchão are must-try dishes. " +
-                    "Feni, locally distilled from cashew or coconut, is Goa's signature spirit. " +
-                    "Dudhsagar Falls, a magnificent 310-meter waterfall, is a spectacular monsoon attraction. " +
-                    "Fort Aguada offers panoramic views of the Arabian Sea. " +
-                    "Anjuna Flea Market and Saturday Night Market at Arpora are iconic shopping experiences. " +
-                    "Old Goa was once called the 'Rome of the East'. " +
-                    "Goa's carnival in February is a colorful three-day festival. " +
-                    "The best time to visit is November to February for beaches. " +
-                    "The Goan trance music scene has made Goa world-famous in electronic music culture.";
-            imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Palolem_Beach.jpg/800px-Palolem_Beach.jpg";
-        } else if (lower.contains("kerala")) {
-            description = "Kerala, God's Own Country, is one of India's most beautiful states, famous for its tranquil backwaters, lush tea gardens, diverse wildlife, and rich Ayurvedic traditions. " +
-                    "The serene backwaters of Alleppey offer unforgettable houseboat cruises through palm-fringed canals and lagoons. " +
-                    "Munnar's rolling tea plantations, misty peaks, and the Eravikulam National Park (home to the endangered Nilgiri Tahr) make it a premier hill station. " +
-                    "Periyar Wildlife Sanctuary in Thekkady offers bamboo rafting, jungle treks, and tiger spotting. " +
-                    "Kovalam and Varkala beaches are famous for their dramatic cliffs, lighthouse views, and Ayurvedic beach resorts. " +
-                    "Kerala cuisine is a feast — Sadhya (banana leaf meal), Karimeen Pollichathu (pearl spot fish), Appam with Stew, and Payasam are legendary. " +
-                    "Fort Kochi features historic Chinese Fishing Nets, colonial architecture, and the Paradesi Synagogue. " +
-                    "Kathakali dance drama and Kalaripayattu martial art are signature cultural experiences. " +
-                    "Wayanad's misty hills, ancient caves, and spice plantations offer an offbeat retreat. " +
-                    "Kerala's Ayurvedic wellness tradition attracts health tourists from around the world. " +
-                    "The Snake Boat Race (Vallam Kali) in Alleppey is one of the most thrilling water sports events in India. " +
-                    "Kerala has a tropical monsoon climate; the best time to visit is September to March. " +
-                    "The state has the highest literacy rate in India and is known for its progressive social indicators.";
-            imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Houseboats_at_Kerala_Backwaters.jpg/800px-Houseboats_at_Kerala_Backwaters.jpg";
-        } else if (lower.contains("delhi")) {
-            description = "Delhi, India's sprawling capital territory, is a mesmerizing blend of ancient heritage and modern ambition spanning over 3,000 years of history. " +
-                    "The Red Fort, a UNESCO World Heritage Site built by Shah Jahan in 1639, is where India's Independence Day flag hoisting takes place. " +
-                    "Qutub Minar, the tallest brick minaret in the world at 72.5 meters, dates back to the 12th century. " +
-                    "Humayun's Tomb inspired the design of the Taj Mahal. India Gate is a 42-meter war memorial and the heart of Lutyens' Delhi. " +
-                    "Chandni Chowk is a paradise for street food — parantha, jalebi, and chaat are legendary here. " +
-                    "The Lotus Temple and Akshardham Temple are stunning modern landmarks. " +
-                    "Jama Masjid is one of the largest mosques in India. The Delhi Metro covers over 390 km. " +
-                    "Hauz Khas Village combines medieval ruins with trendy cafes. " +
-                    "Delhi's climate has extreme seasons; the best time to visit is October to March. " +
-                    "Lodhi Garden and Connaught Place are beloved gathering spots. " +
-                    "The National Museum and Crafts Museum offer deep cultural immersion.";
-            imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Qutab_Minar_mbread.jpg/800px-Qutab_Minar_mread.jpg";
-        } else {
-            imageUrl = wikipediaImageClient.fetchImageForQuery(city);
+        // 4. Try Grok for enhanced info if available
+        String climate = "Pleasant";
+        String bestSeason = "October to March";
+        String tags = "culture, nature, exploration";
+        String apiKey = appProperties.getGrok().getApiKey();
+        if (apiKey != null && !apiKey.isBlank()) {
+            try {
+                Destination grokDest = generateDestinationWithGrok(city, country);
+                if (grokDest.getDescription() != null && grokDest.getDescription().length() > description.length()) {
+                    description = grokDest.getDescription();
+                }
+                climate = grokDest.getClimate();
+                bestSeason = grokDest.getBestSeason();
+                tags = grokDest.getTags();
+                if (grokDest.getImageUrl() != null && !grokDest.getImageUrl().isBlank()) {
+                    imageUrl = grokDest.getImageUrl();
+                }
+            } catch (Exception e) {
+                log.error("Grok enhancement failed for {}, using Gemini description", city);
+            }
         }
 
         Destination destination = Destination.builder()
@@ -259,15 +200,77 @@ public class DestinationService {
                 .country(country)
                 .description(description)
                 .imageUrl(imageUrl)
-                .latitude(17.97)
-                .longitude(79.60)
-                .climate("Tropical / Pleasant")
-                .bestSeason("October to March")
-                .tags("culture, nature, history, exploration")
+                .latitude(coords[0])
+                .longitude(coords[1])
+                .climate(climate)
+                .bestSeason(bestSeason)
+                .tags(tags)
                 .exploredCount(0)
                 .build();
 
         return destinationRepository.save(destination);
+    }
+
+    /**
+     * Geocode a city using Google Geocoding API to get real lat/lng.
+     */
+    private double[] geocodeCity(String city, String country) {
+        try {
+            String googleApiKey = appProperties.getGoogle().getPlacesApiKey();
+            if (googleApiKey == null || googleApiKey.isBlank()) {
+                log.warn("No Google API key for geocoding, using fallback coords");
+                return new double[]{0.0, 0.0};
+            }
+
+            String address = city + ", " + country;
+            String url = "https://maps.googleapis.com/maps/api/geocode/json?address=" +
+                    java.net.URLEncoder.encode(address, "UTF-8") + "&key=" + googleApiKey;
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = new RestTemplate().getForObject(url, Map.class);
+            if (response != null && "OK".equals(response.get("status"))) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
+                if (results != null && !results.isEmpty()) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> geometry = (Map<String, Object>) results.get(0).get("geometry");
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> location = (Map<String, Object>) geometry.get("location");
+                    double lat = ((Number) location.get("lat")).doubleValue();
+                    double lng = ((Number) location.get("lng")).doubleValue();
+                    log.info("Geocoded {} to lat={}, lng={}", address, lat, lng);
+                    return new double[]{lat, lng};
+                }
+            }
+        } catch (Exception e) {
+            log.error("Geocoding failed for {}: {}", city, e.getMessage());
+        }
+        return new double[]{0.0, 0.0};
+    }
+
+    /**
+     * Generate a rich travel description using Gemini API.
+     */
+    private String generateDescriptionWithGemini(String city, String country) {
+        try {
+            String prompt = "You are an expert travel guide. Write a detailed, engaging travel description for " +
+                    city + ", " + country + ". Cover: history and heritage, top 5 famous landmarks, " +
+                    "3+ local cuisine specialties with dish names, cultural highlights and festivals, " +
+                    "best activities, climate and best time to visit, and transportation tips. " +
+                    "Write as a single continuous paragraph of 600-800 characters. " +
+                    "Return ONLY the description text, no JSON, no markdown.";
+            String result = geminiApiClient.callGemini(prompt);
+            if (result != null && !result.isBlank() && result.length() > 100) {
+                log.info("Generated Gemini description for {} ({} chars)", city, result.length());
+                return result.trim();
+            }
+        } catch (Exception e) {
+            log.error("Gemini description generation failed for {}: {}", city, e.getMessage());
+        }
+        // Fallback generic description
+        return "Explore the wonderful city of " + city + ", " + country + ". " +
+                "Famous for its vibrant local culture, stunning architectural landmarks, and authentic regional cuisine. " +
+                "A perfect getaway for history enthusiasts, food lovers, and culture seekers alike.";
     }
 
     @SuppressWarnings("unchecked")
@@ -347,8 +350,13 @@ public class DestinationService {
         String remoteImgUrl = generateGrokImageUrl(imgPrompt);
         String localImgUrl = downloadImage(remoteImgUrl, "destination_" + city.toLowerCase().replace(" ", "_"));
         if (localImgUrl == null) {
-            localImgUrl = wikipediaImageClient.fetchImageForQuery(city);
+            localImgUrl = googlePlacesImageClient.fetchImageForQuery(city);
+            if (localImgUrl == null) {
+                localImgUrl = wikipediaImageClient.fetchImageForQuery(city);
+            }
         }
+        // Geocode to get real coordinates
+        double[] coords = geocodeCity(city, country);
 
         return Destination.builder()
                 .name(city)
@@ -356,8 +364,8 @@ public class DestinationService {
                 .country(country)
                 .description(description)
                 .imageUrl(localImgUrl)
-                .latitude(17.97)
-                .longitude(79.60)
+                .latitude(coords[0])
+                .longitude(coords[1])
                 .climate(climate)
                 .bestSeason(bestSeason)
                 .tags(tags)

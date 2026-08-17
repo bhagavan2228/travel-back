@@ -152,7 +152,9 @@ public final class EntityMapper {
                 .id(e.getId())
                 .destinationId(e.getDestination().getId())
                 .title(e.getTitle())
+                .name(e.getTitle())
                 .eventDate(e.getEventDate())
+                .date(e.getBestTime())
                 .category(e.getCategory())
                 .description(e.getDescription())
                 .build();
