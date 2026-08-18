@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -39,6 +41,12 @@ public class HotelSearchResultDto {
     // --- Computed (Phase 3) ---
     private Double luxuryScore;       // Weighted combo
 
+    // --- Extended fields ---
+    private Integer starRating;       // Hotel star rating (2-5)
+    private List<String> amenities;   // e.g. ["WiFi", "Pool", "Spa"]
+    private String description;       // Brief hotel description
+
     private Boolean cached;           // Whether result came from MySQL cache
     private String source;            // "HOTELBEDS", "HOTELBEDS+GOOGLE", "FALLBACK"
 }
+

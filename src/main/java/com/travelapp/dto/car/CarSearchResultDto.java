@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,4 +22,8 @@ public class CarSearchResultDto {
     private String priceFormatted; // e.g. "€45.00"
     private String currency;
     private String imageUrl;
+    private Double rating;
+    private Integer reviewCount;
+    private List<String> features;
 }
+
