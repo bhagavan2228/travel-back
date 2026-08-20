@@ -2,10 +2,10 @@
 # Activate with: SPRING_PROFILES_ACTIVE=prod
 spring:
   datasource:
-    url: ${DATASOURCE_URL:jdbc:mysql://mysql-321de275-muthinenibhagavan-e928.b.aivencloud.com:15872/defaultdb?ssl-mode=REQUIRED}
+    url: ${DATASOURCE_URL:jdbc:mysql://mysql-209cf3d2-bhagavan282005-ff14.e.aivencloud.com:27123/defaultdb?sslMode=REQUIRED}
     username: ${DATASOURCE_USERNAME:avnadmin}
     password: ${DATASOURCE_PASSWORD:}
-    driver-class-name: ${DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+    driver-class-name: ${DATASOURCE_DRIVER:}
 
   jpa:
     show-sql: false
